@@ -4,6 +4,11 @@ __pycache__/
 db.sqlite3
 media/
 staticfiles/
+
+# Claude Code 的项目指令文件，只在本机用，不入库。
+# 它只是子集：共享的规范与陷阱都在 DEVELOPMENT.md 里。
+CLAUDE.md
+
 # 注意：不要在这里写 `static/`。backend/static/frontend/ 的构建产物是
 # 有意入库的（见 DEVELOPMENT.md 陷阱二），而 `static/` 会按目录名匹配到
 # backend/static/，把整个产物目录挡在版本控制外——构建后旧哈希的文件被删、
