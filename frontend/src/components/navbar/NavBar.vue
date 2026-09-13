@@ -20,12 +20,14 @@ import SearchIcon from "@/components/navbar/icons/SearchIcon.vue";
         </div>
 
         <div class="navbar-center w-2/3 max-w-180 flex justify-center">
-          <div class="join w-4/5 flex justify-center">
-            <input class="input join-item rounded-l-full w-4/5" placeholder="搜索你感兴趣的内容" />
-            <button class="btn join-item rounded-r-full gap-0">
-            <SearchIcon />
-              搜索
-            </button>
+          <div class="search-ring">
+            <div class="search-bar">
+              <input class="search-input" placeholder="搜索你感兴趣的内容" />
+              <button class="search-btn">
+                <SearchIcon />
+                <span>搜索</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -80,5 +82,98 @@ import SearchIcon from "@/components/navbar/icons/SearchIcon.vue";
 </template>
 
 <style scoped>
+/* 搜索栏的彩色动态环绕效果。
+   用 @property 让自定义属性可插值，从而直接动画 conic-gradient 的起始角，
+   这样渐变层本身不需要旋转，也就不需要一个超大的方形子元素去覆盖椭圆。 */
+@property --search-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
 
+.search-ring {
+  position: relative;
+  width: 80%;
+  max-width: 45rem;
+  padding: 2px; /* 环的粗细 */
+  border-radius: 9999px;
+  overflow: hidden; /* 把渐变裁成椭圆，只留 padding 那一圈 */
+  /* 未聚焦时的静态细边，聚焦后由彩色环取代 */
+  background: color-mix(in oklab, var(--color-base-content) 20%, transparent);
+}
+
+.search-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(
+    from var(--search-angle),
+    #4285f4,
+    #ea4335,
+    #fbbc05,
+    #34a853,
+    #4285f4
+  );
+  animation: search-ring-spin 3s linear infinite;
+  /* 默认暂停：不聚焦时不产生重绘开销，且保留当前角度让淡出过渡平滑 */
+  animation-play-state: paused;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+/* 点击或聚焦搜索栏，彩色环才启动 */
+.search-ring:focus-within::before {
+  opacity: 1;
+  animation-play-state: running;
+}
+
+@keyframes search-ring-spin {
+  to {
+    --search-angle: 360deg;
+  }
+}
+
+.search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 9999px;
+  background: var(--color-base-300);
+}
+
+.search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 2.75rem;
+  padding-inline: 1.25rem;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--color-base-content);
+  font-size: 0.9375rem;
+}
+
+.search-input::placeholder {
+  color: color-mix(in oklab, var(--color-base-content) 45%, transparent);
+}
+
+.search-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 2.75rem;
+  padding-inline: 1.25rem;
+  background: transparent;
+  border: 0;
+  color: var(--color-base-content);
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.search-btn svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
 </style>
