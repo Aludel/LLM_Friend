@@ -10,7 +10,7 @@ import SearchIcon from "@/components/navbar/icons/SearchIcon.vue";
 <template>
   <div class="drawer lg:drawer-open">
     <input id="my-drawer-4" type="checkbox" class="drawer-toggle inline" />
-    < <div class="drawer-content">
+    <div class="drawer-content">
       <nav class="navbar w-full bg-base-300 shadow-sm">
         <div class="navbar-start">
           <label for="my-drawer-4" aria-label="open sidebar" class="btn btn-square btn-ghost drawer-button">
