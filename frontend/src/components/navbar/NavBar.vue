@@ -4,6 +4,7 @@ import MenuIcon from "@/components/navbar/icons/MenuIcon.vue";
 import HomepageIcon from "@/components/navbar/icons/HomepageIcon.vue";
 import FriendIcon from "@/components/navbar/icons/FriendIcon.vue";
 import CreateIcons from "@/components/navbar/icons/CreateIcons.vue";
+import SearchIcon from "@/components/navbar/icons/SearchIcon.vue";
 </script>
 
 <template>
