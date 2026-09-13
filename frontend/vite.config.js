@@ -14,7 +14,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   build: {
-    outDir: path.resolve(__dirname, '../backend/static/frontend'), // 打包到 Django static
+    outDir: path.resolve(import.meta.dirname, '../backend/static/frontend'), // 打包到 Django static
     emptyOutDir: true,
   },
   resolve: {
