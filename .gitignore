@@ -4,4 +4,7 @@ __pycache__/
 db.sqlite3
 media/
 staticfiles/
-static/
+# 注意：不要在这里写 `static/`。backend/static/frontend/ 的构建产物是
+# 有意入库的（见 DEVELOPMENT.md 陷阱二），而 `static/` 会按目录名匹配到
+# backend/static/，把整个产物目录挡在版本控制外——构建后旧哈希的文件被删、
+# 新的又看不见，仓库里就一个前端资源都不剩了。

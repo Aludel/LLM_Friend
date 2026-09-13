@@ -108,12 +108,13 @@ cd backend
 
 ### 前端
 
-三个脚本定义在 `frontend/package.json` 的 `scripts` 里，本质都是调用 Vite：
+脚本定义在 `frontend/package.json` 的 `scripts` 里：
 
 | 命令 | 实际执行 | 作用 | 端口 |
 | --- | --- | --- | --- |
 | `npm run dev` | `vite` | 开发服务器：读 `frontend/src/` 源码，改动即时热更新，**不写任何文件到磁盘** | 5173 |
-| `npm run build` | `vite build` | 生产构建：打包压缩、文件名加内容哈希，写入 `backend/static/frontend/` | —— |
+| `npm run build` | `vite build && node scripts/sync-template.mjs` | 生产构建：打包压缩、文件名加内容哈希，写入 `backend/static/frontend/`，**并自动把新哈希同步进 Django 模板**（见陷阱一） | —— |
+| `npm run sync` | `node scripts/sync-template.mjs` | 只同步不构建：把模板里的哈希改成当前 `assets/` 里的实际文件名 | —— |
 | `npm run preview` | `vite preview` | 本地预览**已构建**的产物，用于脱离 Django 单独检查构建结果 | 4173 |
 
 `dev` 和 `build` 的区别是本质性的：
@@ -130,92 +131,56 @@ build: {
 }
 ```
 
-注意 `emptyOutDir: true`：构建会**先把 `backend/static/frontend/` 整个清空**再写入。旧哈希的文件是被**删除**，不是留着共存——所以构建之后 8000 端口必然失效，直到你把模板同步过来（见下）。
+注意 `emptyOutDir: true`：构建会**先把 `backend/static/frontend/` 整个清空**再写入。旧哈希的文件是被**删除**，不是留着共存——所以每次构建后模板都必须重新同步，这一步现在由构建脚本自动完成（见下）。
 
-## ⚠️ 陷阱一：构建会打断 8000 端口
+## ⚠️ 陷阱一：构建会打断 8000 端口（已由构建脚本自动处理）
 
 `backend/web/templates/index.html` 里**硬编码了构建产物的哈希文件名**：
 
 ```django
-<script type="module" crossorigin src="{% static 'frontend/assets/index-CuUsnuGI.js' %}"></script>
-<link rel="stylesheet" crossorigin href="{% static 'frontend/assets/index-CKT5K5NR.css' %}">
+<script type="module" crossorigin src="{% static 'frontend/assets/index-XXXXXXXX.js' %}"></script>
+<link rel="stylesheet" crossorigin href="{% static 'frontend/assets/index-XXXXXXXX.css' %}">
 ```
 
 而这个模板**不是 Vite 生成的**。Vite 生成的是 `backend/static/frontend/index.html`，两份是不同的文件，内容也不同（后者用 `/assets/...`，前者用 `{% static %}`）。
 
-Vite 的输出文件名带内容哈希，**源码一改、重新构建，哈希就变**。实测一次全新构建的产出：
+Vite 的输出文件名带内容哈希，**源码一改、重新构建，哈希就变**。模板里那两个名字一旦对不上新哈希，访问 8000 就会因脚本和样式表 404 而白屏。
 
-```
-index-BxcJWdw6.js    index-gxaJMinD.css
-```
+### 现在由构建脚本自动同步
 
-和模板里写死的 `index-CuUsnuGI.js` / `index-CKT5K5NR.css` **两个都对不上**。此时访问 8000 会因脚本和样式表 404 而白屏。
+`npm run build` 的第二段就是 `frontend/scripts/sync-template.mjs`，它会在构建后自动把模板里那两个哈希换成 `assets/` 下的实际文件名。**你不需要知道哈希是什么，也不该手动敲它。**
 
-### 怎么改后端的 index
+脚本的行为：
 
-要同步的就是 `backend/web/templates/index.html` 的第 10、11 两行：
+- 只认 `frontend/assets/index-<hash>.{js,css}` 这个形状；在模板里找不到就报错退出，不会静默放过
+- `assets/` 下出现**多个** `.js` 或 `.css`（将来做了代码分割）时直接报错——文件名没法猜，必须人工确认加载哪个
+- 幂等：文件名已经对得上时不写盘，不刷新 mtime
 
-```django
-<script type="module" crossorigin src="{% static 'frontend/assets/index-CuUsnuGI.js' %}"></script>
-<link rel="stylesheet" crossorigin href="{% static 'frontend/assets/index-CKT5K5NR.css' %}">
-```
+路径前缀是 `frontend/assets/`，不是 `assets/`。因为模板用的是 Django 的 `{% static %}`，根目录是 `backend/static/`——所以**不能**照抄 Vite 那份产物 `backend/static/frontend/index.html` 里的 `/assets/...` 写法。
 
-把 `index-XXXX.js` / `index-XXXX.css` 换成 `backend/static/frontend/assets/` 下的**实际文件名**。
-
-注意路径前缀是 `frontend/assets/`，不是 `assets/`。因为模板用的是 Django 的 `{% static %}`，根目录是 `backend/static/`——所以**不能**直接照抄 Vite 自己生成的那份 `backend/static/frontend/index.html` 里的 `/assets/...` 写法。
-
-**手动改**：
-
-```bash
-ls backend/static/frontend/assets/     # 看新文件名
-# 然后把上面两行改掉
-```
-
-**一条命令改完**（在仓库根目录执行）：
-
-```bash
-js=$(ls backend/static/frontend/assets/*.js)
-css=$(ls backend/static/frontend/assets/*.css)
-# 出现多个入口文件时直接报错退出，避免拼出错误的文件名
-case "$js$css" in *$'\n'*) echo "assets/ 下有多个入口文件，请手动确认"; exit 1;; esac
-js=${js##*/}; css=${css##*/}
-
-sed -i '' -E "s#frontend/assets/index-[A-Za-z0-9_-]+\.js#frontend/assets/$js#"   backend/web/templates/index.html
-sed -i '' -E "s#frontend/assets/index-[A-Za-z0-9_-]+\.css#frontend/assets/$css#" backend/web/templates/index.html
-```
-
-关于 `-i ''`：这是 macOS 的写法（`sed` 的备份后缀参数），Linux 上要改成 `sed -i -E`。
-
-这条命令是**幂等的**——文件名已经对得上时不会产生任何改动，实测确认。
-
-那三行防护是必要的：当前构建只产出单个 JS 和单个 CSS 入口，但一旦将来做了代码分割产生多个 chunk，`ls` 会返回多行，简单取文件名会拼出一个不存在的路径并**静默**写进模板。加上判断后这种情况会直接报错，而不是坏得不明不白。
+**要改的是 Django 模板 `backend/web/templates/index.html`，不是那份 Vite 产物。** 产物每次构建都会被重写，而且 Django 根本不服务它（`backend/backend/urls.py` 只挂了 `/assets/` 和 `/media/`），改了也是白改。
 
 ### 完整的构建流程
 
 ```bash
-# 1. 构建（会先清空再重写 backend/static/frontend/）
-cd frontend && npm run build
+cd frontend && npm run build                                              # 构建 + 自动同步模板
 
-# 2. 回仓库根目录，同步模板里的两个哈希
-cd ..
-js=$(ls backend/static/frontend/assets/*.js)
-css=$(ls backend/static/frontend/assets/*.css)
-case "$js$css" in *$'\n'*) echo "assets/ 下有多个入口文件，请手动确认"; exit 1;; esac
-js=${js##*/}; css=${css##*/}
-sed -i '' -E "s#frontend/assets/index-[A-Za-z0-9_-]+\.js#frontend/assets/$js#"   backend/web/templates/index.html
-sed -i '' -E "s#frontend/assets/index-[A-Za-z0-9_-]+\.css#frontend/assets/$css#" backend/web/templates/index.html
-
-# 3. 验证 8000 端口还能正常返回
-curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8000/
+cd .. && curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8000/  # 验证
 ```
 
 开发阶段走 5173 不会碰到这个问题——Vite 自己管理资源引用，改完源码刷新即可。这个陷阱只影响 8000 端口。
 
-## ⚠️ 陷阱二：`static/` 是有意保留在版本控制里的
+## ⚠️ 陷阱二：构建产物是有意保留在版本控制里的
 
-`.gitignore` 里写着 `static/`，但 `backend/static/frontend/` 的 4 个文件**仍被 git 跟踪**，这是有意为之：新克隆的仓库因此可以直接 `runserver` 就在 8000 看到界面，不必先装 Node 再构建。
+`backend/static/frontend/` 的构建产物**被 git 跟踪**，这是有意为之：新克隆的仓库因此可以直接 `runserver` 就在 8000 看到界面，不必先装 Node 再构建。
 
-代价就是陷阱一——哈希不同步的问题会一直在。
+所以 `.gitignore` 里**不能**写 `static/`。这个模式按目录名匹配，会连 `backend/static/` 整个一起挡掉——构建后旧哈希的文件被删、新的又看不见，仓库里一个前端资源都不剩。
+
+改完产物记得和代码一起提交：
+
+```bash
+git add backend/static/frontend/
+```
 
 ## 数据库
 
