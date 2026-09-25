@@ -32,7 +32,9 @@ import SearchIcon from "@/components/navbar/icons/SearchIcon.vue";
         </div>
 
         <div class="navbar-end">
-          <button class="btn btn-ghost text-base">登录</button>
+          <RouterLink :to="{name: 'user-account-login-index'}" active-class="btn-active" class="menu-focus btn-ghost text-base">
+            登录
+          </RouterLink>
         </div>
       </nav>
 
@@ -43,37 +45,26 @@ import SearchIcon from "@/components/navbar/icons/SearchIcon.vue";
     <div class="drawer-side is-drawer-close:overflow-visible">
       <label for="my-drawer-4" aria-label="close sidebar" class="drawer-overlay"></label>
       <div class="flex min-h-full flex-col items-start bg-base-200 is-drawer-close:w-16 is-drawer-open:w-56">
-        <!-- Sidebar content here -->
         <ul class="menu w-full grow">
-          <!-- List item -->
           <li>
-            <button class="is-drawer-close:tooltip is-drawer-close:tooltip-right py-2.5" data-tip="首页">
+            <RouterLink :to="{name: 'homepage-index'}" active-class="menu-focus" class="is-drawer-close:tooltip is-drawer-close:tooltip-right py-2.5" data-tip="首页">
               <HomepageIcon/>
               <span class="is-drawer-close:hidden table-base ml-2 whitespace-nowrap">首页</span>
-            </button>
+            </RouterLink>
 
           </li>
-                  <li>
-            <button class="is-drawer-close:tooltip is-drawer-close:tooltip-right py-2.5" data-tip="好友">
+          <li>
+            <RouterLink :to="{name: 'friend-index'}" active-class="menu-focus" class="is-drawer-close:tooltip is-drawer-close:tooltip-right py-2.5" data-tip="好友">
               <FriendIcon/>
               <span class="is-drawer-close:hidden table-base ml-2 whitespace-nowrap">好友</span>
-            </button>
+            </RouterLink>
 
           </li>
-                  <li>
-            <button class="is-drawer-close:tooltip is-drawer-close:tooltip-right py-2.5" data-tip="创作">
+          <li>
+            <RouterLink :to="{name: 'create-index'}" active-class="menu-focus" class="is-drawer-close:tooltip is-drawer-close:tooltip-right py-2.5" data-tip="创作">
               <CreateIcons/>
               <span class="is-drawer-close:hidden table-base ml-2 whitespace-nowrap">创作</span>
-            </button>
-          </li>
-
-          <!-- List item -->
-          <li>
-            <button class="is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Settings">
-              <!-- Settings icon -->
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="currentColor" class="my-1.5 inline-block size-4"><path d="M20 7h-9"></path><path d="M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg>
-              <span class="is-drawer-close:hidden">Settings</span>
-            </button>
+            </RouterLink>
           </li>
         </ul>
       </div>

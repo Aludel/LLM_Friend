@@ -2,10 +2,11 @@
 
 纯命令速查。**首次部署**看「一」，**每次开发**看「二」「三」。
 
-> 动手前先记住两条 Windows 差异，否则照抄网上 Unix 教程会直接卡住：
+> 动手前先记住三条本机差异，否则照抄网上教程会直接卡住：
 >
 > - venv 目录是 `.venv\Scripts\`，**不是** `.venv/bin\`
 > - PowerShell 5.1 不支持 `&&`，串联命令用 `;` 或分两行
+> - 前端只认 `127.0.0.1:5173`，**不能用 `localhost:5173`**。本机 IPv6 回环 `::1` 不通（被 TUN 代理的过滤驱动拦掉），而 Vite 默认按 `localhost` 解析会绑到 `::1`，于是端口在监听却谁连谁被拒。已固定在 `vite.config.js` 的 `server.host`，别删。
 >
 > 下面一律用完整路径调 `.venv\Scripts\python.exe`，所以**不需要激活虚拟环境**，也不挑终端（PowerShell / Git Bash 都能跑）。
 
@@ -79,10 +80,12 @@ cd D:\LLM_Friend\frontend
 npm run dev
 ```
 
-效果：Vite 跑在 http://localhost:5173
+效果：Vite 跑在 http://127.0.0.1:5173
 
-**开发时访问 http://localhost:5173** —— 它读 `frontend/src/` 的源码，改完立刻生效。
+**开发时访问 http://127.0.0.1:5173** —— 它读 `frontend/src/` 的源码，改完立刻生效。
 8000 加载的是上次构建的产物，不反映源码改动，只在验证「构建后的真实表现」时才看它。
+
+> 地址栏别改成 `localhost:5173`：本机 `localhost` 解析到 `::1`，那里连不通，只会得到 `ERR_CONNECTION_REFUSED`。后端 8000 绑的是 IPv4，所以这个错**只出现在前端**——别据此怀疑自己改的代码。
 
 ---
 
@@ -153,6 +156,7 @@ git add backend/static/frontend/ backend/web/templates/index.html
 | 改 `backend/static/frontend/index.html` | 那是 Vite 自己生成的，Django 根本不服务它（只挂了 `/assets/` 和 `/media/`） |
 | 在 `.gitignore` 里加 `static/` | 会把 `backend/static/` 整个挡掉，产物全部丢失 |
 | 手敲模板里的哈希文件名 | `npm run build` 会自动同步 |
+| 删掉 `vite.config.js` 里的 `server.host: '127.0.0.1'` | 会退回绑 `::1`，5173 立刻 `ERR_CONNECTION_REFUSED`。终端里 Vite 明明打印着 "ready"，页面就是打不开——代码没问题，别去翻代码 |
 
 ---
 
