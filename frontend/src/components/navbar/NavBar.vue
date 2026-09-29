@@ -5,6 +5,9 @@ import HomepageIcon from "@/components/navbar/icons/HomepageIcon.vue";
 import FriendIcon from "@/components/navbar/icons/FriendIcon.vue";
 import CreateIcons from "@/components/navbar/icons/CreateIcons.vue";
 import SearchIcon from "@/components/navbar/icons/SearchIcon.vue";
+import {useUserStore} from "@/stores/user.js";
+
+const user =useUserStore()
 </script>
 
 <template>
@@ -32,7 +35,11 @@ import SearchIcon from "@/components/navbar/icons/SearchIcon.vue";
         </div>
 
         <div class="navbar-end">
-          <RouterLink :to="{name: 'user-account-login-index'}" active-class="btn-active" class="menu-focus btn-ghost text-base">
+          <RouterLink v-if="user.isLogin()" :to="{name: 'create-index'}"class="">
+            <CreateIcons />
+            创作
+          </RouterLink>
+          <RouterLink v-if="user.isLogin()" :to="{name: 'user-account-login-index'}" active-class="btn-active" class="menu-focus btn-ghost text-base">
             登录
           </RouterLink>
         </div>

@@ -1,5 +1,11 @@
+import logging
+
+from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+
+logger = logging.getLogger(__name__)
 
 
 class RefreshTokenView(APIView):
@@ -11,7 +17,8 @@ class RefreshTokenView(APIView):
                     'result': 'Refresh token is missing'
                 }, status = 401)
             refresh = RefreshToken(refresh_token)
-            if settings.SIMPLE_JWT['ROTATE_REFRESH_TOKEN']:
+            # 注意是 ROTATE_REFRESH_TOKENS（带 S），settings.SIMPLE_JWT 里的键名如此。
+            if settings.SIMPLE_JWT['ROTATE_REFRESH_TOKENS']:
                 refresh.set_jti()
                 response = Response({
                     'result':'success',
@@ -30,7 +37,8 @@ class RefreshTokenView(APIView):
                 'result': 'success',
                 'access':str(refresh.access_token),
             })
-        except:
+        except Exception:
+            logger.exception('刷新令牌接口异常')
             return Response({
                 'result':'Refresh Token Expired',
             },status = 401)
